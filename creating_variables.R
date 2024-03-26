@@ -8,8 +8,10 @@ rm(list = ls())
 
 setwd("C:/broiler_acites/Causal Workflow with Broiler case")
 load("data/data.Rda")
+load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Husinfo.Rdata')
 #Getting feed names from the forblanding table
 load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Forblanding.Rdata')
+
 
 feed <- subset(Forblanding, select = c('PK_Forblanding_Dim', 'Forblanding', 'FK_Forfirma_Dim', 'FK_Fortype_Dim'))
 feed <- filter(feed, FK_Fortype_Dim == 2)
@@ -176,6 +178,7 @@ p1
 data <- left_join(data, growth, by = 'id_batch')
 
 names(data)[names(data) == "aceties"] <- "ascites"
+
 long_data <- subset(data, select = c('id_batch',
                                      'feed_name', #Treatment 
                                      'feed_firm', #Feed firm code, case we need it
@@ -193,14 +196,12 @@ long_data <- subset(data, select = c('id_batch',
                                      'average_food', #Food consumption
                                      'average_water', #Water consumption
                                      'bird_density', #Birds p m-sqr
-                                     'slaughter_age',
-                                     'leverandoer_nr')) #For farm effect  
-save(long_data,file="long_data_for_analysis.Rda")
+                                     'LeverandoerNr')) #For farm effect  
 
 # Reshape from long to wide 
 wide_data <-  distinct(long_data, id_batch, .keep_all = TRUE)
-
-save(wide_data,file="wide_data_for_analysis2.Rda")
+setwd("C:/Causal-Workflow/")
+save(wide_data,file="data/analysis_data.Rda")
 
 
 
