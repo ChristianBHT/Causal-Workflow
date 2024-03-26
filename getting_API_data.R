@@ -37,7 +37,7 @@ locations <- merge(leverandoer, postnummer, by='postnummer')
 ####################################################################################
 #First you need a Frost client ID, go to Frost web side to register
 # Insert your own client ID here
-client_id <- '188729ee-d228-4e9e-8a3b-b57101f6aee3'
+client_id <- ''
 
 my_list <- unique(as.integer(locations$id_producer))
 my_list <- sort(my_list)
