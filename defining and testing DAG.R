@@ -400,10 +400,54 @@ test30 <- gcm.test(Y = testData$growth,
 test30 
 
 #Growth ⊥ Humidity | Outdoor temp., Water cons.
+testData <- subset(wide_data, select = c(growth, average_Hmax, average_out_temp, average_water))
+testData <- na.omit(testData)
+Z = data.frame(testData$average_out_temp, testData$average_water)
+
+test31 <- gcm.test(Y = testData$growth, 
+                   X = testData$average_Hmax, 
+                   Z = Z, 
+                   alpha = 0.01)
+test31 
+
 
 #Growth ⊥ Humidity | Feed type, Water cons.
+testData <- subset(wide_data, select = c(growth, average_Hmax, feed, average_water))
+testData <- na.omit(testData)
+dummy_matrix <- model.matrix(~ feed - 1, data = testData)
+
+Z = data.frame(dummy_matrix, testData$average_water)
+
+test32 <- gcm.test(Y = testData$growth, 
+                   X = testData$average_Hmax, 
+                   Z = Z, 
+                   alpha = 0.01)
+test32 
+
+
 #Growth ⊥ Temp. | Outdoor temp., Water cons.
+testData <- subset(wide_data, select = c(growth, average_Tmax, average_out_temp, average_water))
+testData <- na.omit(testData)
+Z = data.frame(testData$average_out_temp, testData$average_water)
+
+test33 <- gcm.test(Y = testData$growth, 
+                   X = testData$average_Tmax, 
+                   Z = Z, 
+                   alpha = 0.01)
+test33 
 #Growth ⊥ Temp. | Feed type, Water cons.
+testData <- subset(wide_data, select = c(growth, average_Tmax, feed, average_water))
+testData <- na.omit(testData)
+dummy_matrix <- model.matrix(~ feed - 1, data = testData)
+
+Z = data.frame(dummy_matrix, testData$average_water)
+
+test34 <- gcm.test(Y = testData$growth, 
+                   X = testData$average_Tmax, 
+                   Z = Z, 
+                   alpha = 0.01)
+test34 
+
 
 
 
@@ -416,11 +460,8 @@ test30
 #Month of Year ⊥ Humidity | Outdoor temp.
 #Month of Year ⊥ Temp. | Outdoor temp.
 #Food cons. ⊥ Month of Year | Feed type, Outdoor temp.
-# Skipped since month of year is not continous
 #Food cons. ⊥ Month of Year | Feed type, Temp.
-# Skipped since month of year is not continous
 #Food cons. ⊥ Month of Year | Feed type, Water cons.
-# Skipped since month of year is not continous
 #Feed type ⊥ Water cons. | Temp.
 #Feed type ⊥ Water cons. | Outdoor temp.
 #Feed type ⊥ Humidity | Outdoor temp.
