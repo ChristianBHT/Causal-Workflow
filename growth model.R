@@ -3,6 +3,9 @@ library(dplyr)
 library(tidyr)
 library(lubridate)
 library(janitor)
+if (!requireNamespace("lavaan", quietly = TRUE)) {
+  install.packages("lavaan")
+}
 library(lavaan)
 library(ggplot2)
 
@@ -28,16 +31,16 @@ wide_df <- pivot_wider(long_df,
                       names_prefix = "weight_")
 
 #Keeping variables which have many observed
-wide_df <- wide_df[c("id_batch", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
+wide_df <- data.frame(wide_df[c("id_batch", "weight_1", "weight_2", "weight_3", "weight_4", "weight_5", "weight_6", 
                      "weight_7", "weight_8", "weight_9", "weight_10", "weight_11", "weight_12", 
                      "weight_13", "weight_14", "weight_15", "weight_16", "weight_17", "weight_18", 
                      "weight_19", "weight_20", "weight_21", "weight_22", "weight_23", "weight_24", 
-                     "weight_25", "weight_26", "weight_27")]
+                     "weight_25", "weight_26", "weight_27")])
 
 #Removing rows with missing values, i.e. we are only modeling on those with a complete set of weight observations
 wide_df <- na.omit(wide_df)
 #Specifying a growth model
-model <- ' intercept =~   1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27
+model <- 'intercept =~   1*weight_1 + 1*weight_2 + 1*weight_3 + 1*weight_4 + 1*weight_5 + 1*weight_6 + 1*weight_7 + 1*weight_8 + 1*weight_9 + 1*weight_10 + 1*weight_11 + 1*weight_12 + 1*weight_13 + 1*weight_14 + 1*weight_15 + 1*weight_16 + 1*weight_17 + 1*weight_18 + 1*weight_19 + 1*weight_20 + 1*weight_21 + 1*weight_22 + 1*weight_23 +  1*weight_24 + 1*weight_25 + 1*weight_26 + 1*weight_27
            growth =~   1*weight_1 + 2*weight_2 + 3*weight_3 + 4*weight_4 + 5*weight_5 + 6*weight_6 + 7*weight_7 + 8*weight_8 + 9*weight_9 + 10*weight_10 + 11*weight_11 + 12*weight_12 + 13*weight_13 + 14*weight_14 + 15*weight_15 + 16*weight_16 + 17*weight_17 + 18*weight_18 + 19*weight_19 + 20*weight_20 + 21*weight_21 + 22*weight_22 + 23*weight_23 +24*weight_24 + 25*weight_25 + 26*weight_26 + 27*weight_27 
             sqr_growth =~   1*weight_1 + 4*weight_2 + 9*weight_3 + 16*weight_4 + 25*weight_5 + 36*weight_6 + 49*weight_7 + 64*weight_8 + 81*weight_9 + 100*weight_10 + 121*weight_11 + 144*weight_12 + 169*weight_13 + 196*weight_14 + 225*weight_15 + 256*weight_16 + 289*weight_17 + 324*weight_18 + 361*weight_19 + 400*weight_20 + 441*weight_21 + 484*weight_22 + 529*weight_23 +  576*weight_24 + 625*weight_25 + 676*weight_26 + 729*weight_27' 
 

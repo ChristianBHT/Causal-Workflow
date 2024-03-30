@@ -8,10 +8,21 @@ rm(list = ls())
 
 setwd("C:/broiler_acites/Causal Workflow with Broiler case")
 load("data/data.Rda")
+selected_rows <- data %>% filter(id_batch == 15450)
+
 load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Husinfo.Rdata')
 #Getting feed names from the forblanding table
 load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Forblanding.Rdata')
 
+#Slaughter table
+load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Utslaktning.Rdata')
+slaughter <- subset(Utslaktning, select = c("FK_Innsett_Dim", "LevendeAntall", "InnsatteKyllinger"))
+colnames(slaughter) <- c("id_batch", "alive_slaughter", "chickens_from_h")
+# Finding duplicates 
+duplicated <- slaughter[duplicated(slaughter) | duplicated(slaughter, fromLast = TRUE), ]
+slaughter <- slaughter[!duplicated(slaughter), ]
+
+print(duplicates)
 
 feed <- subset(Forblanding, select = c('PK_Forblanding_Dim', 'Forblanding', 'FK_Forfirma_Dim', 'FK_Fortype_Dim'))
 feed <- filter(feed, FK_Fortype_Dim == 2)
@@ -83,6 +94,10 @@ climate_data <- data %>%
                 group_by(id_batch) %>%
                 summarise(average_out_temp = mean(out_temp), 
                           average_out_hum = mean(out_humidity))
+
+
+#Add on slaughter information
+data <- left_join(data, slaughter, by = 'id_batch' )
 #Add on hybrid
 data <- left_join(data, hybrid, by = 'id_batch')
 #Add on month variable to data
