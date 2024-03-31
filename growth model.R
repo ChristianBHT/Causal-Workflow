@@ -9,7 +9,6 @@ if (!requireNamespace("lavaan", quietly = TRUE)) {
 library(lavaan)
 library(ggplot2)
 
-
 setwd("C:/Causal-Workflow/")
 
 load(file="data/clean_data.Rda")
@@ -116,6 +115,7 @@ long_data <- subset(data, select = c('id_batch',
                                      'average_food', #Food consumption
                                      'average_water', #Water consumption
                                      'bird_density', #Birds p m-sqr
+                                     'chicken_last_day',
                                      'LeverandoerNr')) #For farm effect  
 
 # Reshape from long to wide 

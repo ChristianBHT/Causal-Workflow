@@ -412,7 +412,6 @@ test33 <- gcm.test(Y = testData$growth,
                    alpha = 0.01)
 test33 
 
-
 #Growth ⊥ Humidity | Feed type, Water cons.
 testData <- subset(wide_data, select = c(growth, average_Hmax, feed, average_water))
 testData <- na.omit(testData)
@@ -426,7 +425,6 @@ test34 <- gcm.test(Y = testData$growth,
                    alpha = 0.01)
 test34 
 
-
 #Growth ⊥ Temp. | Outdoor temp., Water cons.
 testData <- subset(wide_data, select = c(growth, average_Tmax, average_out_temp, average_water))
 testData <- na.omit(testData)
@@ -437,6 +435,7 @@ test35 <- gcm.test(Y = testData$growth,
                    Z = Z, 
                    alpha = 0.01)
 test35 
+
 #Growth ⊥ Temp. | Feed type, Water cons.
 testData <- subset(wide_data, select = c(growth, average_Tmax, feed, average_water))
 testData <- na.omit(testData)

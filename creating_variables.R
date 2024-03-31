@@ -14,15 +14,13 @@ load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Husinfo.Rda
 #Getting feed names from the forblanding table
 load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Forblanding.Rdata')
 
-#Slaughter table
+#Slaughter table (not used)
 load('C:/Users/christian.thorjussen/Project Nortura/Nytt datauttrekk/Utslaktning.Rdata')
 slaughter <- subset(Utslaktning, select = c("FK_Innsett_Dim", "LevendeAntall", "InnsatteKyllinger"))
 colnames(slaughter) <- c("id_batch", "alive_slaughter", "chickens_from_h")
 # Finding duplicates 
 duplicated <- slaughter[duplicated(slaughter) | duplicated(slaughter, fromLast = TRUE), ]
 slaughter <- slaughter[!duplicated(slaughter), ]
-
-print(duplicates)
 
 feed <- subset(Forblanding, select = c('PK_Forblanding_Dim', 'Forblanding', 'FK_Forfirma_Dim', 'FK_Fortype_Dim'))
 feed <- filter(feed, FK_Fortype_Dim == 2)
@@ -55,8 +53,19 @@ freq_month <- data %>%
 # Converting month into a factor variable
 freq_month$frequent_month <- as.factor(freq_month$frequent_month)
 
-# Create water_per_bird
-data$chickens <- data$birds_from_hatchery - data$total_dead
+# Calculating how many alive chicken there is, data from slaughterhouse is wrongly registered with many double counts
+data <- data %>%
+  group_by(id_batch) %>%                  # Group by id_batch
+  arrange(age, .by_group = TRUE) %>%  # Ensure data is ordered by age within each group
+  mutate(cum_dead = cumsum(total_dead))   # Calculate cumulative sum of dead chicken
+
+
+data$chickens <- data$birds_from_hatchery - data$cum_dead #Calculating number of chickens
+
+# The minimum alive chicken is the number delivered to slaughterhouse
+min_chicken <- data %>%
+  group_by(id_batch) %>%
+  summarise(chicken_last_day = min(chickens))
 
 data$water_per_bird <- data$water_consump/data$chickens
 
@@ -96,10 +105,10 @@ climate_data <- data %>%
                           average_out_hum = mean(out_humidity))
 
 
-#Add on slaughter information
-data <- left_join(data, slaughter, by = 'id_batch' )
 #Add on hybrid
 data <- left_join(data, hybrid, by = 'id_batch')
+#Add on chickens
+data <- left_join(data, min_chicken, by = 'id_batch')
 #Add on month variable to data
 data <- left_join(data, freq_month, by = 'id_batch')
 #Add on water consumption 
