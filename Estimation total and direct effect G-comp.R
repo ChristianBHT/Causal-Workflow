@@ -102,13 +102,12 @@ data <- subset(data, select = c('ascites_prev', 'treatment_1', 'average_out_temp
 data <- cbind(data, dummy_month)
 data <- cbind(data, dummy_slaughter)
 
-#T-learner
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
-T_learner_boot_trt1 <-  boot(data = data, statistic = T_learner, R = 500)
+T_learner_boot_trt1 <-  boot(data = data, statistic = T_learner, R = 250)
 save(T_learner_boot_trt1,file="C:/Causal-Workflow/Results/T_learner_boot_trt1.Rda")
-X_learner_boot_trt1 <-  boot(data = data, statistic = X_learner, R = 500)
+X_learner_boot_trt1 <-  boot(data = data, statistic = X_learner, R = 250)
 save(X_learner_boot_trt1,file="C:/Causal-Workflow/Results/X_learner_boot_trt1.Rda")
 
 #-----------------------------------------------------------------------------
@@ -122,13 +121,12 @@ data <- subset(data, select = c('ascites_prev', 'treatment_2', 'average_out_temp
 data <- cbind(data, dummy_month)
 data <- cbind(data, dummy_slaughter)
 
-#T-learner
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
-T_learner_boot_trt2 <-  boot(data = data, statistic = T_learner, R = 500)
+T_learner_boot_trt2 <-  boot(data = data, statistic = T_learner, R = 250)
 save(T_learner_boot_trt2,file="C:/Causal-Workflow/Results/T_learner_boot_trt2.Rda")
-X_learner_boot_trt2 <-  boot(data = data, statistic = X_learner, R = 500)
+X_learner_boot_trt2 <-  boot(data = data, statistic = X_learner, R = 250)
 save(X_learner_boot_trt2,file="C:/Causal-Workflow/Results/X_learner_boot_trt2.Rda")
 
 
@@ -143,13 +141,12 @@ data <- subset(data, select = c('ascites_prev', 'treatment_3', 'average_out_temp
 data <- cbind(data, dummy_month)
 data <- cbind(data, dummy_slaughter)
 
-#T-learner
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
-T_learner_boot_trt3 <-  boot(data = data, statistic = T_learner, R = 500)
+T_learner_boot_trt3 <-  boot(data = data, statistic = T_learner, R = 250)
 save(T_learner_boot_trt3,file="C:/Causal-Workflow/Results/T_learner_boot_trt3.Rda")
-X_learner_boot_trt3 <-  boot(data = data, statistic = X_learner, R = 500)
+X_learner_boot_trt3 <-  boot(data = data, statistic = X_learner, R = 250)
 save(X_learner_boot_trt3,file="C:/Causal-Workflow/Results/X_learner_boot_trt3.Rda")
 
 #-----------------------------------------------------------------------------
@@ -163,7 +160,6 @@ data <- subset(data, select = c('ascites_prev', 'treatment_4', 'average_out_temp
 data <- cbind(data, dummy_month)
 data <- cbind(data, dummy_slaughter)
 
-#T-learner
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
@@ -183,7 +179,6 @@ data <- subset(data, select = c('ascites_prev', 'treatment_5', 'average_out_temp
 data <- cbind(data, dummy_month)
 data <- cbind(data, dummy_slaughter)
 
-#T-learner
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
