@@ -167,9 +167,9 @@ data <- cbind(data, dummy_slaughter)
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
-T_learner_boot_trt4 <-  boot(data = data, statistic = T_learner, R = 500)
+T_learner_boot_trt4 <-  boot(data = data, statistic = T_learner, R = 250)
 save(T_learner_boot_trt4,file="C:/Causal-Workflow/Results/T_learner_boot_trt4.Rda")
-X_learner_boot_trt4 <-  boot(data = data, statistic = X_learner, R = 500)
+X_learner_boot_trt4 <-  boot(data = data, statistic = X_learner, R = 250)
 save(X_learner_boot_trt4,file="C:/Causal-Workflow/Results/X_learner_boot_trt4.Rda")
 
 #-----------------------------------------------------------------------------
@@ -187,9 +187,9 @@ data <- cbind(data, dummy_slaughter)
 data <- na.omit(data)
 org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
 org_effect
-T_learner_boot_trt5 <-  boot(data = data, statistic = T_learner, R = 500)
+T_learner_boot_trt5 <-  boot(data = data, statistic = T_learner, R = 250)
 save(T_learner_boot_trt5,file="C:/Causal-Workflow/Results/T_learner_boot_trt5.Rda")
-X_learner_boot_trt5 <-  boot(data = data, statistic = X_learner, R = 500)
+X_learner_boot_trt5 <-  boot(data = data, statistic = X_learner, R = 250)
 save(X_learner_boot_trt5,file="C:/Causal-Workflow/Results/X_learner_boot_trt5.Rda")
 
 
