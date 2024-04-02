@@ -90,9 +90,9 @@ test3 <- gcm.test(Y = testData$feed, X = testData$average_Hmax, Z = testData$ave
 test3
 
 #Feed type ⊥ Temp. | Outdoor temp.
-testData <- subset(wide_data, select = c(feed, average_Tmax, average_out_temp))
+testData <- subset(wide_data, select = c(feed, average_Tmin, average_out_temp))
 testData <- na.omit(testData)
-test4 <- gcm.test(Y = testData$feed, X = testData$average_Tmax, Z = testData$average_out_temp, alpha = 0.01)
+test4 <- gcm.test(Y = testData$feed, X = testData$average_Tmin, Z = testData$average_out_temp, alpha = 0.01)
 test4 #Reject
 
 
@@ -139,10 +139,10 @@ test9 <- gcm.test(Y = testData$average_food, X = testData$average_out_hum, Z = Z
 test9
 
 #Food cons. ⊥ Outdoor temp. | Feed type, Temp.
-testData <- subset(wide_data, select = c(average_food, average_out_temp, feed, average_Tmax))
+testData <- subset(wide_data, select = c(average_food, average_out_temp, feed, average_Tmax, average_Tmin))
 testData <- na.omit(testData)
 dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_Tmax)
+Z = data.frame(dummy_matrix, testData$average_Tmax, testData$average_Tmin)
 test10 <- gcm.test(Y = testData$average_food, X = testData$average_out_temp, Z = Z, alpha = 0.01)
 test10
 
@@ -155,10 +155,10 @@ test11 <- gcm.test(Y = testData$average_food, X = testData$average_out_temp, Z =
 test11
 
 #Food cons. ⊥ Ascites | Bird density, Feed type, Growth, Temp.
-testData <- subset(wide_data, select = c(average_food, ascites, bird_density, feed, growth, sqr_growth, average_Tmax))
+testData <- subset(wide_data, select = c(average_food, ascites, bird_density, feed, growth, sqr_growth, average_Tmax, average_Tmin))
 testData <- na.omit(testData)
 dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$bird_density, testData$growth, testData$sqr_growth, testData$average_Tmax)
+Z = data.frame(dummy_matrix, testData$bird_density, testData$growth, testData$sqr_growth, testData$average_Tmax, testData$average_Tmin)
 
 test12 <- gcm.test(Y = testData$average_food, 
                    X = testData$ascites, 
@@ -183,7 +183,7 @@ test14 <- gcm.test(Y = testData$average_food,
                    X = testData$average_Hmax, 
                    Z = Z, 
                    alpha = 0.01)
-test14 #Reject
+test14
 
 #Food cons. ⊥ Humidity | Outdoor temp., Water cons.
 testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin,  average_out_temp, average_water))
@@ -193,7 +193,7 @@ test15 <- gcm.test(Y = testData$average_food,
                    X = testData$average_Hmax, 
                    Z = Z, 
                    alpha = 0.01)
-test15 #Reject
+test15
 
 #Food cons. ⊥ Humidity | Feed type, Temp.
 testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin, feed, average_Tmin, average_Tmax))
@@ -202,10 +202,10 @@ dummy_matrix <- model.matrix(~ feed - 1, data = testData)
 Z = data.frame(dummy_matrix, testData$average_Tmin, testData$average_Tmax)
 
 test16 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Hmin, 
+                   X = testData$average_Hmax, 
                    Z = Z, 
                    alpha = 0.01)
-test16 #Reject
+test16 #Reject average_Hmin
 
 #Food cons. ⊥ Humidity | Feed type, Water cons.
 testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin, feed, average_water))
@@ -214,10 +214,10 @@ dummy_matrix <- model.matrix(~ feed - 1, data = testData)
 Z = data.frame(dummy_matrix, testData$average_water)
 
 test17 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Hmax, 
+                   X = testData$average_Hmin, 
                    Z = Z, 
                    alpha = 0.01)
-test17 #Reject
+test17 #Reject average_Hmin
 
 #Food cons. ⊥ Temp. | Outdoor temp., Water cons.
 testData <- subset(wide_data, select = c(average_food, average_Tmax, average_Tmin, average_out_temp, average_water))
@@ -225,19 +225,19 @@ testData <- na.omit(testData)
 Z = data.frame(testData$average_out_temp, testData$average_water)
 
 test18 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Tmax, 
+                   X = testData$average_Tmin, 
                    Z = Z, 
                    alpha = 0.01)
 test18 
 
 #Food cons. ⊥ Temp. | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_food, average_Tmax, feed, average_water))
+testData <- subset(wide_data, select = c(average_food, average_Tmax, average_Tmin, feed, average_water))
 testData <- na.omit(testData)
 dummy_matrix <- model.matrix(~ feed - 1, data = testData)
 Z = data.frame(dummy_matrix, testData$average_water)
 
 test19 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Tmax, 
+                   X = testData$average_Tmin, 
                    Z = Z, 
                    alpha = 0.01)
 test19 
@@ -304,15 +304,15 @@ test24 <- gcm.test(Y = testData$average_out_hum,
 test24 #reject
 
 #Outdoor humidity ⊥ Humidity | Outdoor temp.
-testData <- subset(wide_data, select = c(average_out_hum, average_Hmax, average_out_temp))
+testData <- subset(wide_data, select = c(average_out_hum, average_Hmin, average_out_temp))
 testData <- na.omit(testData)
 Z = data.frame(testData$average_out_temp)
 
 test25 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$average_Hmax, 
+                   X = testData$average_Hmin, 
                    Z = Z, 
                    alpha = 0.01)
-test25 #reject
+test25 #reject average_Hmin
 
 #Outdoor temp. ⊥ Water cons. | Temp.
 testData <- subset(wide_data, select = c(average_out_temp, average_water, average_Tmax, average_Tmin))
@@ -365,16 +365,16 @@ test29 <- gcm.test(Y = testData$average_water,
 test29 
 
 #Water cons. ⊥ Humidity | Temp.
-testData <- subset(wide_data, select = c(average_water, average_Hmax, average_Tmax, average_Tmin))
+testData <- subset(wide_data, select = c(average_water, average_Hmax, average_Hmin, average_Tmax, average_Tmin))
 testData <- na.omit(testData)
 
 Z = data.frame(testData$average_Tmax, testData$average_Tmin)
 
 test30 <- gcm.test(Y = testData$average_water, 
-                   X = testData$average_Hmax, 
+                   X = testData$average_Hmin, 
                    Z = Z, 
                    alpha = 0.01)
-test30 #reject
+test30 #Reject average_Hmin 
 
 #Growth ⊥ Humidity | Outdoor temp., Temp.
 testData <- subset(wide_data, select = c(growth, average_Hmax, average_out_temp, average_Tmax, average_Tmin))
@@ -410,7 +410,7 @@ test33 <- gcm.test(Y = testData$growth,
                    X = testData$average_Hmax, 
                    Z = Z, 
                    alpha = 0.01)
-test33 
+test33 #Reject average_Hmax
 
 #Growth ⊥ Humidity | Feed type, Water cons.
 testData <- subset(wide_data, select = c(growth, average_Hmax, feed, average_water))

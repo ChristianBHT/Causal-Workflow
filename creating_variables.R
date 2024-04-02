@@ -92,9 +92,9 @@ bird_density <- data %>%
 temperatur_aggregate <- data %>%
   group_by(id_batch) %>%
   summarise(average_Tmin = mean(temp_min), 
-            average_Tmax = mean(temp_min),
+            average_Tmax = mean(temp_max),
             average_Hmin = mean(humidity_min), 
-            average_Hmax = mean(humidity_min))
+            average_Hmax = mean(humidity_max))
 
 #Outdoor temp and outdoor humidity
 data$out_temp <- as.numeric(data$out_temp)
