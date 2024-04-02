@@ -234,7 +234,7 @@ X_learner <- function(data,
     print_every_n = print_every_n
   )
   
-  #Model imputed ITE as a function of CONTROL group adjustment set 
+
   data_matrix_dc <- xgb.DMatrix(data = as.matrix(x_c), label = as.matrix(d_c))
   
   x_0_cv <- xgboost::xgb.cv(
