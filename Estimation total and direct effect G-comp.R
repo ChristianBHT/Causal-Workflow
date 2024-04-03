@@ -2,6 +2,7 @@ rm(list = ls())
 
 library(dagitty)
 library(boot)
+library(tidyverse)
 library(xgboost)
 library(parallel)
 library(dplyr)
@@ -188,6 +189,45 @@ X_learner_boot_trt5 <-  boot(data = data, statistic = X_learner, R = 250)
 save(X_learner_boot_trt5,file="C:/Causal-Workflow/Results/X_learner_boot_trt5.Rda")
 
 
+t_learner_data <- data.frame(cbind(T_learner_boot_trt1$t[,1], 
+                        T_learner_boot_trt2$t[,1], 
+                        T_learner_boot_trt3$t[,1], 
+                        T_learner_boot_trt4$t[,1], 
+                        T_learner_boot_trt5$t[,1]))
+
+df_long <- t_learner_data %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "id") %>%
+  pivot_longer(cols = -id, names_to = "variable", values_to = "value")
+
+df_percentiles <- df_long %>%
+  group_by(variable) %>%
+  summarise(
+    mean = mean(value),
+    lower_perc = quantile(value, probs = 0.025),
+    upper_perc = quantile(value, probs = 0.975)
+  )
+
+ggplot() +
+  geom_point(data = df_percentiles, aes(x = variable, y = mean), color = "black", size = 3) +
+  geom_errorbar(data = df_percentiles, aes(x = variable, ymin = lower_perc, ymax = upper_perc), color = "black", width = 0.2) +
+  scale_x_discrete(labels = c('X1' = 'Toppkylling', 'X2' = 'Kromat Low', 'X3' = 'Kromat Simple', 'X4' = 'Harmoni', 'X5' = 'Kromat High')) +
+  theme_minimal() +
+  labs(title = " ",
+       x = "Feed", 
+       y = "Change in prevalence per 1000") +
+  coord_flip()
+
+ggplot(df_long, aes(x = variable, y = value)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c('X1' = 'Toppkylling', 'X2' = 'Kromat Low', 'X3' = 'Kromat Simple', 'X4' = 'Harmoni', 'X5' = 'Kromat High')) +
+  theme_minimal() +
+  labs(title = " ",
+       x = "Feed", 
+       y = "Change in prevalence per 1000") +
+  coord_flip()
+
+x_learner_data <- 
 
 #--------------------------------------------------------------------------------
 # Linear model
