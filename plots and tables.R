@@ -134,7 +134,9 @@ T_placebo <- c(mean = mean(T_boot_placebo),
 X_placebo <- c(mean = mean(X_boot_placebo), 
                Lower = quantile(X_boot_placebo, probs = 0.025), 
                Upper = quantile(X_boot_placebo, probs = 0.975))
+
 placebo_data <- rbind(T_placebo, X_placebo, reg_placebo)
+
 
 
 

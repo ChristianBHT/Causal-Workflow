@@ -68,6 +68,7 @@ Unknown -> Temp.
 }')
 # plot(DAG)
 wide_data$ascites_prev <- 1000*wide_data$ascites/wide_data$chicken_last_day
+sd(wide_data$ascites_prev)
 #------------------#
 #  Total Effect    #
 #------------------#
@@ -190,10 +191,10 @@ save(marginal_effects_treatment,file="C:/Causal-Workflow/Results/marginal_effect
 #-------------------------------
 
 #------------------------------------
-# Dummy treatment and random outcome
+# Placebo treatment and dummy outcome
 #-----------------------------------
 
-# Dummy treatment
+# Placebo treatment
 data <- subset(wide_data, select = c('ascites', 'frequent_month', 'average_out_hum', 'average_out_temp', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse', 'ascites_prev'))
 n <- nrow(data)
 data$dummy_trt <- rbinom(n = n, size = 1, prob = 0.4)
@@ -219,7 +220,32 @@ dummy_effects_treatment <- margins(lm_dummy, vce = 'delta')
 save(dummy_effects_treatment,file="C:/Causal-Workflow/Results/dummy_effects_treatment.Rda")
 
 
+# dummy outcome
+data <- subset(total_data, select = c('feed_group', 'frequent_month', 'average_out_hum', 'average_out_temp', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse', 'ascites_prev'))
+n <- nrow(data)
+data$dummy_outcome <- rnorm(n, 3,1)
+data$treatment_1 <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0) #Feed 1 obs: 997
 
+dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
+dummy_month <- model.matrix(~ frequent_month - 1, data = data)
+data <- subset(data, select = c('dummy_outcome', 'treatment_1', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
+data <- cbind(data, dummy_month)
+data <- cbind(data, dummy_slaughter)
+
+data <- na.omit(data)
+T_learner(data, nfold_t = 10, nfold_c = 10)
+X_learner(data, nfold_t = 10, nfold_c = 10)
+
+T_learner_boot_dummy_outcome <-  boot(data = data, statistic = T_learner, R = 250)
+save(T_learner_boot_dummy_outcome,file="C:/Causal-Workflow/Results/T_learner_boot_dummy_outcome.Rda")
+X_learner_boot_dummy_outcome <-  boot(data = data, statistic = X_learner, R = 250)
+save(X_learner_boot_dummy_outcome,file="C:/Causal-Workflow/Results/X_learner_boot_dummy_outcome.Rda")
+
+lm_dummy <- lm(ascites_prev ~ dummy_trt +  average_out_temp + average_out_hum + average_Tmax + average_Tmin, data = total_data) # Fit the model on the resample
+summary(lm_dummy)
+# Calculate marginal effects for the treatment variable
+dummy_effects_treatment <- margins(lm_dummy, vce = 'delta')
+save(dummy_effects_treatment,file="C:/Causal-Workflow/Results/dummy_effects_treatment.Rda")
 
 
 
