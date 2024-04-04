@@ -287,11 +287,11 @@ BootyTest <- function(formula = NULL, data = data, statistic, nboot = 25,
     stop("Please provide the parameter p (size of training set)")
   }
   if (p <= 0 || p >= 1) {
-    stop("You silly you, p must be between 0 and 1")
+    stop("p must be between 0 and 1")
   }
   if (is.null(formula) & is.null(dag)) {
     stop("Please provide a R-formula for the condition to be tested, i.e. Y _||_ X | Z -> Y ~ X + Z.
-         Or provide a dagitty DAG with the option: dag = 'your DAG' and dag_cond = '# of the condition in need of testing'")
+         Or provide a dagitty DAG with the parameters: dag = 'your DAG' and dag_cond = '# of the condition in need of testing'")
   } else if (!inherits(formula, "formula") & !is.null(formula)) {
     formula <- as.formula(formula)
   } else if (is.null(formula) & !is.null(dag)) {

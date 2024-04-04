@@ -74,100 +74,96 @@ sd(wide_data$ascites_prev)
 #------------------#
 adjust_set_total <- adjustmentSets(DAG, effect = "total")
 adjust_set_total
-total_data <- subset(wide_data, select = c('feed_name', 'ascites', 'frequent_month', 'average_out_hum', 'average_out_temp', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse', 'ascites_prev'))
+data <- subset(wide_data, select = c('feed_name', 'ascites', 'frequent_month', 'average_out_hum', 'average_out_temp', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse', 'ascites_prev'))
 
-total_data$feed_name <- as.factor(total_data$feed_name)
-total_data$id_slaughterhouse <- as.factor(total_data$id_slaughterhouse)
-total_data$frequent_month <- as.factor(total_data$frequent_month)
-
+data$id_slaughterhouse <- as.factor(data$id_slaughterhouse)
+data$frequent_month <- as.factor(data$frequent_month)
 
 levels = 4  # Set the number of levels other than other
-total_data$feed_group = fct_lump_n(total_data$feed_name, n = levels, other_level = "Other")
-total_data$feed_group <- as.factor(total_data$feed_group)
-table(total_data$feed_group)
+data$feed_group = fct_lump_n(data$feed_name, n = levels, other_level = "Other")
+data$feed_group <- as.factor(data$feed_group)
 # Treatment 
-total_data$treatment_1 <-  ifelse(total_data$feed_group == "Toppkylling Netto", 1, 0) #Feed 1 obs: 997
-total_data$treatment_2 <-  ifelse(total_data$feed_group == "Kromat Kylling 2 Laag u/k", 1, 0) #Feed 2 obs:937  
-total_data$treatment_3 <-  ifelse(total_data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0) #Feed 3 obs: 632
-total_data$treatment_4 <-  ifelse(total_data$feed_group == "Harmoni Kylling Ressurs", 1, 0) #Feed 4: 594
+data$treatment_1 <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0) #Feed 1 obs: 997
+data$treatment_2 <-  ifelse(data$feed_group == "Kromat Kylling 2 Laag u/k", 1, 0) #Feed 2 obs:937  
+data$treatment_3 <-  ifelse(data$feed_group == "Kromat Kylling 2 Enkel u/k", 1, 0) #Feed 3 obs: 632
+data$treatment_4 <-  ifelse(data$feed_group == "Harmoni Kylling Ressurs", 1, 0) #Feed 4: 594
 
 
 #-----------------------------------------------------------------------------
 # Total effect treatment_1
 #-----------------------------------------------------------------------------
-data <- subset(total_data, !(treatment_2 == 1 | treatment_3 == 1 | treatment_4 == 1 ))
+df <- subset(data, !(treatment_2 == 1 | treatment_3 == 1 | treatment_4 == 1))
 
-dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
-dummy_month <- model.matrix(~ frequent_month - 1, data = data)
-data <- subset(data, select = c('ascites_prev', 'treatment_1', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
-data <- cbind(data, dummy_month)
-data <- cbind(data, dummy_slaughter)
+df <- subset(df, select = c('ascites_prev', 'treatment_1', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
 
-data <- na.omit(data)
-org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
-org_effect
-T_learner_boot_trt1 <-  boot(data = data, statistic = T_learner, R = 250)
+T_learner_boot_trt1 <-  boot(
+  data = df,
+  formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse ,
+  treatment = 'treatment_1',
+  statistic = T_learner_boost,
+  R = 300  
+)
+
+hist(T_learner_boot_trt1$t[,1])
 save(T_learner_boot_trt1,file="C:/Causal-Workflow/Results/T_learner_boot_trt1.Rda")
-X_learner_boot_trt1 <-  boot(data = data, statistic = X_learner, R = 250)
-save(X_learner_boot_trt1,file="C:/Causal-Workflow/Results/X_learner_boot_trt1.Rda")
 
 #-----------------------------------------------------------------------------
 # Total effect treatment_2
 #-----------------------------------------------------------------------------
-data <- subset(total_data, !(treatment_1 == 1 | treatment_3 == 1 | treatment_4 == 1))
+df <- subset(data, !(treatment_1 == 1 | treatment_3 == 1 | treatment_4 == 1))
 
-dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
-dummy_month <- model.matrix(~ frequent_month - 1, data = data)
-data <- subset(data, select = c('ascites_prev', 'treatment_2', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
-data <- cbind(data, dummy_month)
-data <- cbind(data, dummy_slaughter)
+df <- subset(df, select = c('ascites_prev', 'treatment_2', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
 
-data <- na.omit(data)
-org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
-org_effect
-T_learner_boot_trt2 <-  boot(data = data, statistic = T_learner, R = 250)
+T_learner_boot_trt2 <-  boot(
+  data = df,
+  formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse ,
+  treatment = 'treatment_2',
+  statistic = T_learner_boost,
+  R = 500  
+)
+hist(T_learner_boot_trt2$t[,1])
 save(T_learner_boot_trt2,file="C:/Causal-Workflow/Results/T_learner_boot_trt2.Rda")
-X_learner_boot_trt2 <-  boot(data = data, statistic = X_learner, R = 250)
-save(X_learner_boot_trt2,file="C:/Causal-Workflow/Results/X_learner_boot_trt2.Rda")
 
 
 #-----------------------------------------------------------------------------
 # Total effect treatment_3
 #-----------------------------------------------------------------------------
-data <- subset(total_data, !(treatment_1 == 1 | treatment_2 == 1 | treatment_4 == 1))
+df <- subset(data, !(treatment_1 == 1 | treatment_2 == 1 | treatment_4 == 1))
 
-dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
-dummy_month <- model.matrix(~ frequent_month - 1, data = data)
-data <- subset(data, select = c('ascites_prev', 'treatment_3', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
-data <- cbind(data, dummy_month)
-data <- cbind(data, dummy_slaughter)
-
-data <- na.omit(data)
-org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
+df <- subset(df, select = c('ascites_prev', 'treatment_3', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
+org_effect <- T_learner_boost(data = df, formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin, treatment = 'treatment_3')
 org_effect
-T_learner_boot_trt3 <-  boot(data = data, statistic = T_learner, R = 250)
+T_learner_boot_trt3 <-  boot(
+  data = df,
+  formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse ,
+  treatment = 'treatment_3',
+  statistic = T_learner_boost,
+  R = 500  
+)
+hist(T_learner_boot_trt3$t[,1])
 save(T_learner_boot_trt3,file="C:/Causal-Workflow/Results/T_learner_boot_trt3.Rda")
-X_learner_boot_trt3 <-  boot(data = data, statistic = X_learner, R = 250)
-save(X_learner_boot_trt3,file="C:/Causal-Workflow/Results/X_learner_boot_trt3.Rda")
 
 #-----------------------------------------------------------------------------
 # Total effect treatment_4
 #-----------------------------------------------------------------------------
-data <- subset(total_data, !(treatment_1 == 1 | treatment_2 == 1 | treatment_3 == 1 ))
+df <- subset(data, !(treatment_1 == 1 | treatment_2 == 1 | treatment_3 == 1))
 
-dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
-dummy_month <- model.matrix(~ frequent_month - 1, data = data)
-data <- subset(data, select = c('ascites_prev', 'treatment_4', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
-data <- cbind(data, dummy_month)
-data <- cbind(data, dummy_slaughter)
-
-data <- na.omit(data)
-org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
+df <- subset(df, select = c('ascites_prev', 'treatment_4', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
+org_effect <- T_learner_boost(data = df, formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin, treatment = 'treatment_4')
 org_effect
-T_learner_boot_trt4 <-  boot(data = data, statistic = T_learner, R = 250)
+T_learner_boot_trt4 <-  boot(
+  data = df,
+  formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin ,
+  treatment = 'treatment_4',
+  statistic = T_learner_boost,
+  R = 500  
+)
+hist(T_learner_boot_trt4$t[,1])
 save(T_learner_boot_trt4,file="C:/Causal-Workflow/Results/T_learner_boot_trt4.Rda")
-X_learner_boot_trt4 <-  boot(data = data, statistic = X_learner, R = 250)
-save(X_learner_boot_trt4,file="C:/Causal-Workflow/Results/X_learner_boot_trt4.Rda")
 
 
 #--------------------------------------------------------------------------------
@@ -195,57 +191,150 @@ save(marginal_effects_treatment,file="C:/Causal-Workflow/Results/marginal_effect
 #-----------------------------------
 
 # Placebo treatment
-data <- subset(wide_data, select = c('ascites', 'frequent_month', 'average_out_hum', 'average_out_temp', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse', 'ascites_prev'))
-n <- nrow(data)
-data$dummy_trt <- rbinom(n = n, size = 1, prob = 0.4)
-
-dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
-dummy_month <- model.matrix(~ frequent_month - 1, data = data)
-data <- subset(data, select = c('ascites_prev', 'dummy_trt', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
-data <- cbind(data, dummy_month)
-data <- cbind(data, dummy_slaughter)
-
-data <- na.omit(data)
-org_effect <- T_learner(data, nfold_t = 10, nfold_c = 10)
+org_effect <- T_learner_boost(data = data, 
+                              formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse, 
+                              treatment = 'dummy_trt')
 org_effect
-T_learner_boot_dummy <-  boot(data = data, statistic = T_learner, R = 250)
-save(T_learner_boot_dummy,file="C:/Causal-Workflow/Results/T_learner_boot_dummy.Rda")
-X_learner_boot__dummy <-  boot(data = data, statistic = X_learner, R = 250)
-save(X_learner_boot__dummy,file="C:/Causal-Workflow/Results/X_learner_boot_dummy.Rda")
 
-lm_dummy <- lm(ascites_prev ~ dummy_trt +  average_out_temp + average_out_hum + average_Tmax + average_Tmin, data = total_data) # Fit the model on the resample
+T_learner_boot_placebo <-  boot(
+  data = data,
+  formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse ,
+  treatment = 'dummy_trt',
+  statistic = T_learner_boost,
+  R = 100  
+)
+hist(T_learner_boot_placebo$t[,1])
+save(T_learner_boot_placebo,file="C:/Causal-Workflow/Results/T_learner_boot_placebo.Rda")
+
+
+lm_dummy <- lm(ascites_prev ~ dummy_trt +  average_out_temp + average_out_hum + average_Tmax + average_Tmin, data = data) # Fit the model on the resample
 summary(lm_dummy)
-# Calculate marginal effects for the treatment variable
+
 dummy_effects_treatment <- margins(lm_dummy, vce = 'delta')
 save(dummy_effects_treatment,file="C:/Causal-Workflow/Results/dummy_effects_treatment.Rda")
 
 
-# dummy outcome
-data <- subset(total_data, select = c('feed_group', 'frequent_month', 'average_out_hum', 'average_out_temp', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse', 'ascites_prev'))
-n <- nrow(data)
-data$dummy_outcome <- rnorm(n, 3,1)
-data$treatment_1 <-  ifelse(data$feed_group == "Toppkylling Netto", 1, 0) #Feed 1 obs: 997
+#-----------------------------------------------------------------------------
+# Total effect dummy treatment_1
+#-----------------------------------------------------------------------------
+df <- subset(data, !(treatment_2 == 1 | treatment_3 == 1 | treatment_4 == 1))
 
-dummy_slaughter <- model.matrix(~ id_slaughterhouse - 1, data = data)
-dummy_month <- model.matrix(~ frequent_month - 1, data = data)
-data <- subset(data, select = c('dummy_outcome', 'treatment_1', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin'))
-data <- cbind(data, dummy_month)
-data <- cbind(data, dummy_slaughter)
+df <- subset(df, select = c('ascites_prev', 'treatment_1', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
+output <- list()
+R = 300
 
-data <- na.omit(data)
-T_learner(data, nfold_t = 10, nfold_c = 10)
-X_learner(data, nfold_t = 10, nfold_c = 10)
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- T_learner_boost(data = df, 
+                                 formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse, 
+                                 treatment = 'treatment_1')
+}
 
-T_learner_boot_dummy_outcome <-  boot(data = data, statistic = T_learner, R = 250)
-save(T_learner_boot_dummy_outcome,file="C:/Causal-Workflow/Results/T_learner_boot_dummy_outcome.Rda")
-X_learner_boot_dummy_outcome <-  boot(data = data, statistic = X_learner, R = 250)
-save(X_learner_boot_dummy_outcome,file="C:/Causal-Workflow/Results/X_learner_boot_dummy_outcome.Rda")
+T_learner_boot_placebo_1 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+names(T_learner_boot_placebo_1) <- c("ATE", "MU1", "MU0")
+hist(T_learner_boot_placebo_1$ATE)
+save(T_learner_boot_placebo_1,file="C:/Causal-Workflow/Results/T_learner_boot_placebo_1.Rda")
 
-lm_dummy <- lm(ascites_prev ~ dummy_trt +  average_out_temp + average_out_hum + average_Tmax + average_Tmin, data = total_data) # Fit the model on the resample
-summary(lm_dummy)
-# Calculate marginal effects for the treatment variable
-dummy_effects_treatment <- margins(lm_dummy, vce = 'delta')
-save(dummy_effects_treatment,file="C:/Causal-Workflow/Results/dummy_effects_treatment.Rda")
+output <- list()
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- lm(data = df, formula = ascites_prev ~ treatment_1 + average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse)$coefficients[2]
+  
+}
 
+linear_boot_placebo_1 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+hist(linear_boot_placebo_1$treatment_1)
+save(linear_boot_placebo_1,file="C:/Causal-Workflow/Results/linear_boot_placebo_1.Rda")
+
+#-----------------------------------------------------------------------------
+# Total effect dummy treatment_2
+#-----------------------------------------------------------------------------
+df <- subset(data, !(treatment_1 == 1 | treatment_3 == 1 | treatment_4 == 1))
+df <- subset(df, select = c('ascites_prev', 'treatment_2', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
+output <- list()
+R = 300
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- T_learner_boost(data = df, 
+                                 formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse, 
+                                 treatment = 'treatment_2')
+}
+T_learner_boot_placebo_2 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+names(T_learner_boot_placebo_2) <- c("ATE", "MU1", "MU0")
+hist(T_learner_boot_placebo_2$ATE)
+save(T_learner_boot_placebo_2,file="C:/Causal-Workflow/Results/T_learner_boot_placebo_2.Rda")
+
+output <- list()
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- lm(data = df, formula = ascites_prev ~ treatment_2 + average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse)$coefficients[2]
+  
+}
+
+linear_boot_placebo_2 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+hist(linear_boot_placebo_2$treatment_2)
+save(linear_boot_placebo_2,file="C:/Causal-Workflow/Results/linear_boot_placebo_2.Rda")
+
+#-----------------------------------------------------------------------------
+# Total effect dummy treatment_3
+#-----------------------------------------------------------------------------
+df <- subset(data, !(treatment_1 == 1 | treatment_2 == 1 | treatment_4 == 1))
+df <- subset(df, select = c('ascites_prev', 'treatment_3', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
+output <- list()
+R = 300
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- T_learner_boost(data = df, 
+                                 formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse, 
+                                 treatment = 'treatment_3')
+}
+T_learner_boot_placebo_3 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+names(T_learner_boot_placebo_3) <- c("ATE", "MU1", "MU0")
+hist(T_learner_boot_placebo_3$ATE)
+save(T_learner_boot_placebo_3,file="C:/Causal-Workflow/Results/T_learner_boot_placebo_2.Rda")
+
+output <- list()
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- lm(data = df, formula = ascites_prev ~ treatment_3 + average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse)$coefficients[2]
+  
+}
+
+linear_boot_placebo_3 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+hist(linear_boot_placebo_3$treatment_3)
+save(linear_boot_placebo_3,file="C:/Causal-Workflow/Results/linear_boot_placebo_3.Rda")
+
+#-----------------------------------------------------------------------------
+# Total effect dummy treatment_4
+#-----------------------------------------------------------------------------
+df <- subset(data, !(treatment_1 == 1 | treatment_2 == 1 | treatment_3 == 1))
+df <- subset(df, select = c('ascites_prev', 'treatment_4', 'average_out_temp', 'average_out_hum', 'average_Tmax', 'average_Tmin', 'id_slaughterhouse'))
+df <- na.omit(df)
+output <- list()
+R = 300
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- T_learner_boost(data = df, 
+                                 formula = ascites_prev ~ average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse, 
+                                 treatment = 'treatment_4')
+}
+T_learner_boot_placebo_4 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+names(T_learner_boot_placebo_4) <- c("ATE", "MU1", "MU0")
+hist(T_learner_boot_placebo_4$ATE)
+save(T_learner_boot_placebo_4,file="C:/Causal-Workflow/Results/T_learner_boot_placebo_4.Rda")
+
+output <- list()
+for (j in 1:R) {
+  df$ascites_prev <-  sample(df$ascites_prev, replace = FALSE)
+  output[[j]] <- lm(data = df, formula = ascites_prev ~ treatment_4 + average_out_temp + average_out_hum + average_Tmax + average_Tmin + id_slaughterhouse)$coefficients[2]
+  
+}
+
+linear_boot_placebo_4 <- do.call(rbind, lapply(output, function(x) data.frame(t(unlist(x)))))
+hist(linear_boot_placebo_4$treatment_4)
+save(linear_boot_placebo_4,file="C:/Causal-Workflow/Results/linear_boot_placebo_4.Rda")
 
 

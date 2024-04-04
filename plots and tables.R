@@ -38,43 +38,6 @@ ggplot() +
   coord_flip()
 
 
-load("C://Causal-Workflow/Results/X_learner_boot_trt1.Rda")
-load("C://Causal-Workflow/Results/X_learner_boot_trt2.Rda")
-load("C://Causal-Workflow/Results/X_learner_boot_trt3.Rda")
-load("C://Causal-Workflow/Results/X_learner_boot_trt4.Rda")
-
-x_learner_data <- data.frame(cbind(X_learner_boot_trt1$t[,1], 
-                                   X_learner_boot_trt2$t[,1], 
-                                   X_learner_boot_trt3$t[,1], 
-                                   X_learner_boot_trt4$t[,1]))
-  
-df_long <- x_learner_data %>%
-  as.data.frame() %>%
-  rownames_to_column(var = "id") %>%
-  pivot_longer(cols = -id, names_to = "variable", values_to = "value")
-
-df_percentiles <- df_long %>%
-  group_by(variable) %>%
-  summarise(
-    mean = mean(value),
-    lower_perc = quantile(value, probs = 0.025),
-    upper_perc = quantile(value, probs = 0.975)
-  )
-
-ggplot() +
-  geom_point(data = df_percentiles, aes(x = variable, y = mean), color = "black", size = 3) +
-  geom_errorbar(data = df_percentiles, aes(x = variable, ymin = lower_perc, ymax = upper_perc), color = "black", width = 0.2) +
-  theme_bw() +
-  scale_x_discrete(labels = NULL) +
-  labs(title = " ",
-       x = "", 
-       y = "Change in prevalence per 1000") +
-  scale_y_continuous(breaks = c(-1, -0.5, 0, 0.5, 1, 1.5), limits = c(-1.25, 1.75)) +
-  theme(axis.text.x = element_text(size = 14), 
-        axis.text.y = element_text(size = 14),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16)) +
-  coord_flip()
 
 load("C://Causal-Workflow/Results/marginal_effects_linear_model.Rda")
 
