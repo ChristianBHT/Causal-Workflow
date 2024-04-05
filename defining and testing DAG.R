@@ -537,13 +537,6 @@ plot.booty(compu_test_12, binwidth = 0.0005)
 
 
 
-non_missing_counts <- colSums(!is.na(data))
-
-# Print the table of non-missing counts
-print(non_missing_counts)
-
-
-
 
 
 
