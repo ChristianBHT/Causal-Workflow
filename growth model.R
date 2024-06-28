@@ -13,7 +13,6 @@ setwd("C:/Causal-Workflow/")
 
 load(file="data/clean_data.Rda")
 
-
 long_df <-  subset(data, select = c(id_batch, age, weight))
 long_df <- long_df %>%
   clean_names()

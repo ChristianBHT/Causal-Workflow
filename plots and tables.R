@@ -4,15 +4,16 @@ library(tidyverse)
 #Causal Effect T learner
 #-----------------
 
-load("C://Causal-Workflow/Results/T_learner_boot_trt1.Rda")
-load("C://Causal-Workflow/Results/T_learner_boot_trt2.Rda")
-load("C://Causal-Workflow/Results/T_learner_boot_trt3.Rda")
-load("C://Causal-Workflow/Results/T_learner_boot_trt4.Rda")
+load("C:/Causal-Workflow/Results/total_effect_T_learner_boot_trt1.Rda")
+load("C:/Causal-Workflow/Results/total_effect_T_learner_boot_trt2.Rda")
+load("C://Causal-Workflow/Results/total_effect_T_learner_boot_trt3.Rda")
+load("C://Causal-Workflow/Results/total_effect_T_learner_boot_trt4.Rda")
 
 t_learner_data <- data.frame(cbind(T_learner_boot_trt1$t[,1], 
                                    T_learner_boot_trt2$t[,1], 
                                    T_learner_boot_trt3$t[,1], 
                                    T_learner_boot_trt4$t[,1]))
+colnames(t_learner_data) <- c("Feed 1", "Feed 2", "Feed 3", "Feed 4")
 
 df_long <- t_learner_data %>%
   as.data.frame() %>%
@@ -26,21 +27,32 @@ df_percentiles <- df_long %>%
     lower_perc = quantile(value, probs = 0.025),
     upper_perc = quantile(value, probs = 0.975)
   )
+df_percentiles$estimator <- "T-learner"
+# Feed encoding 1 = Harmoni, 2 = Kromat S, 3 = Kromat L, 4 = Toppkyll.
 
-ggplot() +
-  geom_point(data = df_percentiles, aes(x = variable, y = mean), color = "black", size = 3) +
-  geom_errorbar(data = df_percentiles, aes(x = variable, ymin = lower_perc, ymax = upper_perc), color = "black", width = 0.2) +
-  scale_x_discrete(labels = c('X1' = 'Toppkylling', 'X2' = 'Kromat Low', 'X3' = 'Kromat Simple', 'X4' = 'Harmoni')) +
-  theme_bw() +
+load("C:/Causal-Workflow/Results/total_effect_marginal_lm.Rda")
+marginal_total$variable <- NA 
+marginal_total$variable[1] <- "Feed 1"
+marginal_total$variable[2] <- "Feed 2"
+marginal_total$variable[3] <- "Feed 3"
+marginal_total$variable[4] <- "Feed 4"
+marginal_total$estimator <- "Linear Reg."
+  
+colnames(marginal_total) <- c("Mean", "Lower", "Upper", "Feed", "Estimator")
+colnames(df_percentiles) <- c("Feed", "Mean", "Lower", "Upper", "Estimator")
+total_effects <- rbind(df_percentiles, marginal_total)
+
+total_effect <- ggplot() +
+  geom_point(data = total_effects, aes(x = Feed, y = Mean, group = Feed, color = Estimator), size = 3) +
+  geom_errorbar(data = total_effects, aes(x = Feed, ymin = Lower, ymax = Upper, group = Feed, color = Estimator), width = 0.2) +
+  geom_point(size = 3) +
+  theme_light() +
   labs(title = " ",
        x = "", 
        y = "Change in prevalence per 1000") +
-  scale_y_continuous(breaks = c(-1, -0.5, 0, 0.5, 1, 1.5), limits = c(-1.25, 2)) +
-  theme(axis.text.x = element_text(size = 14), 
-        axis.text.y = element_text(size = 14),
-        axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16)) +
+  theme(text = element_text(size = 17)) +
   coord_flip()
+ggsave("Figures/total_effect.eps", plot = total_effect, width = 8 , height = 5)
 
 #------------------------------------
 

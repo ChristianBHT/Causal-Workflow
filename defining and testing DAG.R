@@ -4,57 +4,57 @@ library(dplyr)
 rm(list = ls())
 setwd("C:/Causal-Workflow/")
 load("data/analysis_wide_data.Rda")
+dag <- dagitty('dag {
+  out_hum [label="Outdoor humidity"]
+  out_tem [label="Outdoor temp"]
+  month [label="Month of year"]
+  geo [latent, label="Geography"]
+  feed [label="Feed type"]
+  food [label="Food cons"]
+  hum [label="Humidity"]
+  density [label="Bird density"]
+  water [label="Water cons"]
+  temp [label="Temp."]
+  co2 [latent, label="CO2-level"]
+  growth [label="Growth"]
+  ascites [label="Ascites"]
+  unobs [latent, label="Unknown confounding"]
 
-DAG <- dagitty('dag {
-bb="0,0,1,1"
-"Bird density" [pos="0.376,0.316"]
-"CO2-level" [latent,pos="0.496,0.467"]
-"Feed type" [exposure,pos="0.202,0.321"]
-"Food cons." [pos="0.304,0.113"]
-"Month of Year" [pos="0.309,0.542"]
-"Outdoor humidity" [pos="0.436,0.544"]
-"Outdoor temp." [pos="0.631,0.679"]
-"Water cons." [pos="0.542,0.149"]
-Ascites [outcome,pos="0.419,0.446"]
-Geography [latent,pos="0.234,0.674"]
-Growth [pos="0.301,0.298"]
-Humidity [pos="0.440,0.311"]
-Temp. [pos="0.545,0.257"]
-"Bird density" -> "Food cons."
-"Bird density" -> Ascites
-"Bird density" -> Growth
-"CO2-level" -> Ascites
-"Feed type" -> "Food cons."
-"Feed type" -> Ascites
-"Feed type" -> Growth
-"Food cons." -> Growth
-"Month of Year" -> "Feed type"
-"Month of Year" -> "Outdoor humidity"
-"Month of Year" -> "Outdoor temp."
-"Month of Year" -> Ascites
-"Outdoor humidity" -> Ascites
-"Outdoor temp." -> "CO2-level"
-"Outdoor temp." -> "Outdoor humidity"
-"Outdoor temp." -> Ascites
-"Outdoor temp." -> Humidity
-"Outdoor temp." -> Temp.
-"Water cons." -> "Food cons."
-"Water cons." -> Growth
-Geography -> "Feed type"
-Geography -> "Outdoor humidity"
-Geography -> "Outdoor temp."
-Growth -> Ascites
-Humidity -> Ascites
-Temp. -> "Water cons."
-Temp. -> Ascites
-Temp. -> Humidity
-}
-')
-plot(wide_data$growth)
-plot(DAG)
+  growth -> ascites
+  out_hum -> ascites
+  out_tem -> ascites
+  out_tem -> co2
+  out_tem -> temp
+  out_tem -> hum
+  out_tem -> out_hum
+  out_tem -> water
+  temp -> ascites
+  temp -> hum
+  temp -> water
+  hum -> ascites
+  water -> food
+  water -> growth
+  month -> ascites
+  month -> out_hum
+  month -> out_tem
+  month -> feed
+  geo -> out_tem
+  geo -> out_hum
+  geo -> feed
+  feed -> growth
+  feed -> ascites
+  feed -> food
+  co2 -> ascites
+  density -> ascites
+  density -> growth
+  density -> food
+  water -> growth
+  food -> growth
+}')
+plot(dag)
+
 # Get the adjustment set for total effect
-impliedConditionalIndependencies(DAG)
-
+impliedConditionalIndependencies(dag)
 # Creating a feed variable
 frequency <- wide_data %>%
   count(feed_name) %>%
@@ -68,479 +68,392 @@ wide_data <- wide_data %>%
 
 wide_data$feed <- as.factor(wide_data$feed)
 wide_data$frequent_month <- as.factor(wide_data$frequent_month)
-
-#Feed type ⊥ Water cons. | Temp.
-testData <- subset(wide_data, select = c(feed, average_water, average_Tmax))
-testData <- na.omit(testData)
-
-test1 <- gcm.test(Y = testData$feed, X = testData$average_water, Z = testData$average_Tmax, alpha = 0.01)
-test1
-
-#Feed type ⊥ Water cons. | Outdoor temp.
-testData <- subset(wide_data, select = c(feed, average_water, average_out_temp))
-testData <- na.omit(testData)
-
-test2 <- gcm.test(Y = testData$feed, X = testData$average_water, Z = testData$average_out_temp, alpha = 0.01)
-test2
-
-#Feed type ⊥ Humidity | Outdoor temp.
-testData <- subset(wide_data, select = c(feed, average_Hmax, average_out_temp))
-testData <- na.omit(testData)
-test3 <- gcm.test(Y = testData$feed, X = testData$average_Hmax, Z = testData$average_out_temp, alpha = 0.01)
-test3
-
-#Feed type ⊥ Temp. | Outdoor temp.
-testData <- subset(wide_data, select = c(feed, average_Tmin, average_out_temp))
-testData <- na.omit(testData)
-test4 <- gcm.test(Y = testData$feed, X = testData$average_Tmin, Z = testData$average_out_temp, alpha = 0.01)
-test4 #Reject
-
-
-#Food cons. ⊥ Outdoor humidity | Feed type, Outdoor temp.
-testData <- subset(wide_data, select = c(average_food, average_out_hum, feed, average_out_temp))
-testData <- na.omit(testData)
-
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_out_temp)
-
-test5 <- gcm.test(Y = testData$average_food, X = testData$average_out_hum, Z = Z, alpha = 0.01)
-test5
-
-#Food cons. ⊥ Outdoor humidity | Feed type, Temp.
-testData <- subset(wide_data, select = c(average_food, average_out_hum, feed, average_Tmax))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_Tmax)
-test6 <- gcm.test(Y = testData$average_food, X = testData$average_out_hum, Z = Z, alpha = 0.01)
-test6
-
-#Food cons. ⊥ Outdoor humidity | Feed type, Outdoor temp.
-testData <- subset(wide_data, select = c(average_food, average_out_hum, feed, average_out_temp))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_out_temp)
-test7 <- gcm.test(Y = testData$average_food, X = testData$average_out_hum, Z = Z, alpha = 0.01)
-test7
-
-#Food cons. ⊥ Outdoor humidity | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_food, average_out_hum, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_water)
-test8 <- gcm.test(Y = testData$average_food, X = testData$average_out_hum, Z = Z, alpha = 0.01)
-test8 
-
-#Food cons. ⊥ Outdoor humidity | Feed type
-testData <- subset(wide_data, select = c(average_food, average_out_hum, feed))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix)
-test9 <- gcm.test(Y = testData$average_food, X = testData$average_out_hum, Z = Z, alpha = 0.01)
-test9
-
-#Food cons. ⊥ Outdoor temp. | Feed type, Temp.
-testData <- subset(wide_data, select = c(average_food, average_out_temp, feed, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_Tmax, testData$average_Tmin)
-test10 <- gcm.test(Y = testData$average_food, X = testData$average_out_temp, Z = Z, alpha = 0.01)
-test10
-
-#Food cons. ⊥ Outdoor temp. | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_food, average_out_temp, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_water)
-test11 <- gcm.test(Y = testData$average_food, X = testData$average_out_temp, Z = Z, alpha = 0.01)
-test11
-
-#Food cons. ⊥ Ascites | Bird density, Feed type, Growth, Temp.
-testData <- subset(wide_data, select = c(average_food, ascites, bird_density, feed, growth, sqr_growth, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$bird_density, testData$growth, testData$sqr_growth, testData$average_Tmax, testData$average_Tmin)
-
-test12 <- gcm.test(Y = testData$average_food, 
-                   X = testData$ascites, 
-                   Z = Z, 
-                   alpha = 0.01)
-test12
-
-#Food cons. ⊥ Ascites | Bird density, Feed type, Growth, Water cons.
-testData <- subset(wide_data, select = c(average_food, ascites, bird_density, growth, sqr_growth, average_water))
-testData <- na.omit(testData)
-test13 <- gcm.test(Y = testData$average_food, 
-                   X = testData$ascites, 
-                   Z = data.frame(testData$bird_density, testData$growth, testData$sqr_growth, testData$average_water), 
-                   alpha = 0.01)
-test13
-
-#Food cons. ⊥ Humidity | Outdoor temp., Temp.
-testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin, average_out_temp, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-Z <- data.frame(testData$average_Tmax, testData$average_Tmin, testData$average_out_temp)
-test14 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test14
-
-#Food cons. ⊥ Humidity | Outdoor temp., Water cons.
-testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin,  average_out_temp, average_water))
-testData <- na.omit(testData)
-Z <- data.frame(testData$average_water, testData$average_out_temp)
-test15 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test15
-
-#Food cons. ⊥ Humidity | Feed type, Temp.
-testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin, feed, average_Tmin, average_Tmax))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_Tmin, testData$average_Tmax)
-
-test16 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test16 #Reject average_Hmin
-
-#Food cons. ⊥ Humidity | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_food, average_Hmax, average_Hmin, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_water)
-
-test17 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Hmin, 
-                   Z = Z, 
-                   alpha = 0.01)
-test17 #Reject average_Hmin
-
-#Food cons. ⊥ Temp. | Outdoor temp., Water cons.
-testData <- subset(wide_data, select = c(average_food, average_Tmax, average_Tmin, average_out_temp, average_water))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_out_temp, testData$average_water)
-
-test18 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Tmin, 
-                   Z = Z, 
-                   alpha = 0.01)
-test18 
-
-#Food cons. ⊥ Temp. | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_food, average_Tmax, average_Tmin, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_water)
-
-test19 <- gcm.test(Y = testData$average_food, 
-                   X = testData$average_Tmin, 
-                   Z = Z, 
-                   alpha = 0.01)
-test19 
-
-#Outdoor humidity ⊥ Water cons. | Temp.
-testData <- subset(wide_data, select = c(average_out_hum, average_water, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_Tmax, testData$average_Tmin)
-
-test20 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$average_water, 
-                   Z = Z, 
-                   alpha = 0.01)
-test20 
-
-#Outdoor humidity ⊥ Water cons. | Outdoor temp.
-testData <- subset(wide_data, select = c(average_out_hum, average_water, average_out_temp))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_out_temp)
-
-test21 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$average_water, 
-                   Z = Z, 
-                   alpha = 0.01)
-test21 
-
-#Outdoor humidity ⊥ Growth | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_out_hum, growth, feed, average_water))
-testData <- na.omit(testData)
-
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_water)
-
-test22 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$growth, 
-                   Z = Z, 
-                   alpha = 0.01)
-test22 #reject 
-
-#Outdoor humidity ⊥ Growth | Feed type, Temp.
-testData <- subset(wide_data, select = c(average_out_hum, growth, feed, average_Tmin, average_Tmax))
-testData <- na.omit(testData)
-
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_Tmin, testData$average_Tmax)
-
-test23 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$growth, 
-                   Z = Z, 
-                   alpha = 0.01)
-test23 #reject
-
-#Outdoor humidity ⊥ Growth | Feed type, Outdoor temp.
-testData <- subset(wide_data, select = c(average_out_hum, growth, feed, average_out_temp))
-testData <- na.omit(testData)
-
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-Z = data.frame(dummy_matrix, testData$average_out_temp)
-
-test24 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$growth, 
-                   Z = Z, 
-                   alpha = 0.01)
-test24 #reject
-
-#Outdoor humidity ⊥ Humidity | Outdoor temp.
-testData <- subset(wide_data, select = c(average_out_hum, average_Hmin, average_out_temp))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_out_temp)
-
-test25 <- gcm.test(Y = testData$average_out_hum, 
-                   X = testData$average_Hmin, 
-                   Z = Z, 
-                   alpha = 0.01)
-test25 #reject average_Hmin
-
-#Outdoor temp. ⊥ Water cons. | Temp.
-testData <- subset(wide_data, select = c(average_out_temp, average_water, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_Tmax, testData$average_Tmin)
-
-test26 <- gcm.test(Y = testData$average_out_temp, 
-                   X = testData$average_water, 
-                   Z = Z, 
-                   alpha = 0.01)
-test26 
-
-#Outdoor temp. ⊥ Growth | Feed type, Water cons.
-testData <- subset(wide_data, select = c(average_out_temp, growth, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-
-Z = data.frame(dummy_matrix, testData$average_water)
-
-test27 <- gcm.test(Y = testData$average_out_temp, 
-                   X = testData$growth, 
-                   Z = Z, 
-                   alpha = 0.01)
-test27 
-
-#Outdoor temp. ⊥ Growth | Feed type, Temp.
-testData <- subset(wide_data, select = c(average_out_temp, growth, feed, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-
-Z = data.frame(dummy_matrix, testData$average_Tmax, testData$average_Tmin)
-
-test28 <- gcm.test(Y = testData$average_out_temp, 
-                   X = testData$growth, 
-                   Z = Z, 
-                   alpha = 0.01)
-test28 
-
-#Water cons. ⊥ Ascites | Bird density, Feed type, Growth, Temp.
-testData <- subset(wide_data, select = c(average_water, ascites, bird_density, feed, growth, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-
-Z = data.frame(dummy_matrix, testData$bird_density,  testData$growth, testData$average_Tmax, testData$average_Tmin)
-
-test29 <- gcm.test(Y = testData$average_water, 
-                   X = testData$ascites, 
-                   Z = Z, 
-                   alpha = 0.01)
-test29 
-
-#Water cons. ⊥ Humidity | Temp.
-testData <- subset(wide_data, select = c(average_water, average_Hmax, average_Hmin, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-
-Z = data.frame(testData$average_Tmax, testData$average_Tmin)
-
-test30 <- gcm.test(Y = testData$average_water, 
-                   X = testData$average_Hmin, 
-                   Z = Z, 
-                   alpha = 0.01)
-test30 #Reject average_Hmin 
-
-#Growth ⊥ Humidity | Outdoor temp., Temp.
-testData <- subset(wide_data, select = c(growth, average_Hmax, average_out_temp, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-
-Z = data.frame(testData$average_out_temp, testData$average_Tmax, testData$average_Tmin)
-
-test31 <- gcm.test(Y = testData$growth, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test31 
-
-#Growth ⊥ Humidity | Feed type, Temp.
-testData <- subset(wide_data, select = c(growth, average_Hmax, feed, average_Tmax, average_Tmin))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-
-Z = data.frame(dummy_matrix, testData$average_Tmax, testData$average_Tmin)
-
-test32 <- gcm.test(Y = testData$growth, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test32 
-
-#Growth ⊥ Humidity | Outdoor temp., Water cons.
-testData <- subset(wide_data, select = c(growth, average_Hmax, average_out_temp, average_water))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_out_temp, testData$average_water)
-
-test33 <- gcm.test(Y = testData$growth, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test33 #Reject average_Hmax
-
-#Growth ⊥ Humidity | Feed type, Water cons.
-testData <- subset(wide_data, select = c(growth, average_Hmax, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-
-Z = data.frame(dummy_matrix, testData$average_water)
-
-test34 <- gcm.test(Y = testData$growth, 
-                   X = testData$average_Hmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test34 
-
-#Growth ⊥ Temp. | Outdoor temp., Water cons.
-testData <- subset(wide_data, select = c(growth, average_Tmax, average_out_temp, average_water))
-testData <- na.omit(testData)
-Z = data.frame(testData$average_out_temp, testData$average_water)
-
-test35 <- gcm.test(Y = testData$growth, 
-                   X = testData$average_Tmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test35 
-
-#Growth ⊥ Temp. | Feed type, Water cons.
-testData <- subset(wide_data, select = c(growth, average_Tmax, feed, average_water))
-testData <- na.omit(testData)
-dummy_matrix <- model.matrix(~ feed - 1, data = testData)
-
-Z = data.frame(dummy_matrix, testData$average_water)
-
-test36 <- gcm.test(Y = testData$growth, 
-                   X = testData$average_Tmax, 
-                   Z = Z, 
-                   alpha = 0.01)
-test36 
-
-#Month of Year ⊥ Water cons. | Temp.
-formula <- average_water ~ frequent_month + average_Tmin + average_Tmax
-test_data <- subset(wide_data, select = c(average_water, frequent_month, average_Tmin, average_Tmax))
-test_data <- na.omit(test_data)
-compu_test_1 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.9, nboot = 1000, parallel = T)
-plot.booty(compu_test_1)
-
-#Month of Year ⊥ Water cons. | Outdoor temp.
-formula <- average_water ~ frequent_month + average_out_temp
-test_data <- subset(wide_data, select = c(average_water, frequent_month, average_out_temp))
-test_data <- na.omit(test_data)
-compu_test_2 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.9, nboot = 250, parallel = T)
-
-plot.booty(compu_test_2)
-#Month of Year ⊥ Growth | Feed type, Water cons.
-formula <- average_water ~ frequent_month + feed
-test_data <- subset(wide_data, select = c(average_water, frequent_month, feed))
-test_data <- na.omit(test_data)
-compu_test_3 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.9, nboot = 250, parallel = T)
-
-#Month of Year ⊥ Growth | Feed type, Temp.
-formula <- growth ~ frequent_month + feed + average_Tmin + average_Tmax
-test_data <- subset(wide_data, select = c(growth, frequent_month, feed, average_Tmin, average_Tmax))
-test_data <- na.omit(test_data)
-compu_test_4 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.8, nboot = 250, parallel = T)
-plot.booty(compu_test_4)
-
-#Month of Year ⊥ Growth | Feed type, Outdoor temp.
-formula <- growth ~ frequent_month + feed + average_out_temp
-test_data <- subset(wide_data, select = c(growth, frequent_month, feed, average_Tmin, average_Tmax))
-test_data <- na.omit(test_data)
-compu_test_5 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.8, nboot = 250, parallel = T)
-plot.booty(compu_test_5, binwidth = 0.02)
-
-#Month of Year ⊥ Humidity | Outdoor temp.
-formula <- average_Hmin ~ frequent_month + average_out_temp
-test_data <- subset(wide_data, select = c(average_Hmin, frequent_month, average_out_temp))
-test_data <- na.omit(test_data)
-compu_test_6 <- BootyTest(formula = formula, data = test_data, statistic = bagging_test, p = 0.8, nboot = 250, parallel = T)
-plot.booty(compu_test_6, binwidth = 1)
-
-#Month of Year ⊥ Temp. | Outdoor temp.
-formula <- average_Tmax ~ frequent_month + average_out_temp
-test_data <- subset(wide_data, select = c(average_Tmax, frequent_month, average_out_temp))
-test_data <- na.omit(test_data)
-compu_test_7 <- BootyTest(formula = formula, data = test_data, statistic = bagging_test, p = 0.8, nboot = 250, parallel = T)
-plot.booty(compu_test_7, binwidth = 0.1)
-
-#Food cons. ⊥ Month of Year | Feed type, Outdoor temp.
-formula <- average_food ~ frequent_month + feed + average_out_temp
-test_data <- subset(wide_data, select = c(average_food, frequent_month, feed, average_out_temp))
-test_data <- na.omit(test_data)
-compu_test_8 <- BootyTest(formula = formula, data = test_data, statistic = bagging_test, p = 0.8, nboot = 150, parallel = T)
-plot.booty(compu_test_8, binwidth = 0.1)
-
-#Food cons. ⊥ Month of Year | Feed type, Temp.
-formula <- average_food ~ frequent_month + feed + average_Tmin + average_Tmax
-test_data <- subset(wide_data, select = c(average_food, frequent_month, feed, average_Tmin, average_Tmax))
-test_data <- na.omit(test_data)
-compu_test_9 <- BootyTest(formula = formula, data = test_data, statistic = bagging_test, p = 0.8, nboot = 150, parallel = T)
-plot.booty(compu_test_9, binwidth = 0.01)
-
-#Food cons. ⊥ Month of Year | Feed type, Water cons.
-formula <- average_food ~ frequent_month + feed + average_water
-test_data <- subset(wide_data, select = c(average_food, frequent_month, feed, average_water))
-test_data <- na.omit(test_data)
-compu_test_10 <- BootyTest(formula = formula, data = test_data, statistic = bagging_test, p = 0.8, nboot = 150, parallel = T)
-plot.booty(compu_test_10, binwidth = 0.002)
-
-#Feed type ⊥ Water cons. | Temp.
-formula <- average_water ~ feed + average_Tmin + average_Tmax
-test_data <- subset(wide_data, select = c(average_water, feed, average_Tmin, average_Tmax))
-test_data <- na.omit(test_data)
-compu_test_11 <- BootyTest(formula = formula, data = test_data, statistic = bagging_test, p = 0.8, nboot = 500, parallel = T)
-xgcompu_test_11 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.8, nboot = 500, parallel = T)
-plot.booty(compu_test_11, binwidth = 0.0002)
-plot.booty(xgcompu_test_11)
-
-#Feed type ⊥ Water cons. | Outdoor temp.
-formula <- average_water ~ feed +  average_out_temp
-test_data <- subset(wide_data, select = c(average_water, feed, average_out_temp))
-test_data <- na.omit(test_data)
-compu_test_12 <- BootyTest(formula = formula, data = test_data, statistic = xgboost_test, p = 0.7, nboot = 150, parallel = T)
-plot.booty(compu_test_12, binwidth = 0.0005)
-
-
-
-
-
-
-
-
-
-
+## Testing Conditional Independencies using a computational procedure (NullGenerator) if variables are categorical
+## or the GCM test.
+test_results <- data.frame(CI = NULL,
+                           pvalue = NULL)
+
+
+# Perform the tests
+# Define a helper function to add results
+add_test_result <- function(statement, test_pvalue) {
+  new_row <- data.frame(CI = statement, pvalue = test_pvalue)
+  test_results <<- rbind(test_results, new_row)
+}
+# Initialize a data frame to store the results
+test_results <- data.frame(CI = NULL, pvalue = NULL)
+
+# 1. asct _||_ food | dnst, feed, grwt, watr
+data <- subset(wide_data, select = c(ascites, average_food, bird_density, feed, growth, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$ascites, Y = data$average_food, Z = data.frame(data$bird_density, as.integer(data$feed), data$growth, data$average_water))
+add_test_result("ascites _||_ food | bird density, feed, growth, water", test$p.value)
+
+# 2. asct _||_ food | dnst, feed, grwt, ot_t, temp
+data <- subset(wide_data, select = c(ascites, average_food, bird_density, feed, growth, average_out_temp, average_Tmax, average_Tmin))
+data <- na.omit(data)
+test <- gcm.test(X = data$ascites, Y = data$average_food, Z = data.frame(data$bird_density, as.integer(data$feed), data$growth, data$average_out_temp, data$average_Tmax, data$average_Tmin))
+add_test_result("ascites _||_ food | bird density, feed, growth, outdoor temp, temp", test$p.value)
+
+# 3. asct _||_ watr | dnst, feed, grwt, ot_t, temp
+data <- subset(wide_data, select = c(ascites, average_water, bird_density, feed, growth, average_out_temp, average_Tmax, average_Tmin))
+data <- na.omit(data)
+test <- gcm.test(X = data$ascites, Y = data$average_water, Z = data.frame(data$bird_density, as.integer(data$feed), data$growth, data$average_out_temp, data$average_Tmax, data$average_Tmin))
+add_test_result("ascites _||_ water | bird density, feed, growth, outdoor temp, temp", test$p.value)
+
+# 4. dnst _||_ feed
+data <- subset(wide_data, select = c(bird_density, feed))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = bird_density ~ feed, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = bird_density ~ feed, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("bird density _||_ feed", test[2])
+# 5. dnst _||_ hum
+test <- cor.test(x = wide_data$bird_density, y = wide_data$average_Hmax)
+add_test_result("bird density _||_ humidity", test$p.value)
+
+# 6. dnst _||_ mnth
+data <- subset(wide_data, select = c(bird_density, frequent_month))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = bird_density ~ frequent_month, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = bird_density ~ frequent_month, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("bird density _||_ month", test[2])
+
+# 7. dnst _||_ ot_h
+test <- cor.test(x = wide_data$bird_density, y = wide_data$average_out_hum)
+add_test_result("bird density _||_ outdoor humidity", test$p.value)
+
+# 8. dnst _||_ ot_t
+test <- cor.test(x = wide_data$bird_density, y = wide_data$average_out_temp)
+add_test_result("bird density _||_ outdoor temp", test$p.value)
+
+# 9. dnst _||_ temp
+test <- cor.test(x = wide_data$bird_density, y = wide_data$average_Tmax)
+add_test_result("bird density _||_ temperature", test$p.value)
+
+# 10. dnst _||_ watr
+test <- cor.test(x = wide_data$bird_density, y = wide_data$average_water)
+add_test_result("bird density _||_ water", test$p.value)
+
+# 11. feed _||_ hum | ot_t
+data <- subset(wide_data, select = c(feed, average_Hmax, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_Hmax ~ feed + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = average_Hmax ~ feed + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("feed _||_ humidity | outdoor temp", test[2])
+
+# 12. feed _||_ temp | ot_t
+data <- subset(wide_data, select = c(feed, average_Tmax, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_Tmax ~ feed + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = average_Tmax ~ feed + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("feed _||_ temperature | outdoor temp",  test[2])
+
+# 13. feed _||_ watr | ot_t
+data <- subset(wide_data, select = c(feed, average_water, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_water ~ feed + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = average_water ~ feed + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("feed _||_ water | outdoor temp",  test[2])
+
+# 14. food _||_ hum | ot_t, temp
+data <- subset(wide_data, select = c(average_food, average_Hmax, average_out_temp, average_Tmax, average_Tmin))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_Hmax, Z = data.frame(data$average_out_temp, data$average_Tmax, data$average_Tmin))
+add_test_result("food _||_ humidity | outdoor temp, temperature", test$p.value)
+
+# 15. food _||_ hum | ot_t, watr
+data <- subset(wide_data, select = c(average_food, average_Hmax, average_out_temp, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_Hmax, Z = data.frame(data$average_out_temp, data$average_water))
+add_test_result("food _||_ humidity | outdoor temp, water", test$p.value)
+
+# 16. food _||_ hum | feed, watr
+data <- subset(wide_data, select = c(average_food, average_Hmax, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_Hmax, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("food _||_ humidity | feed, water", test$p.value)
+
+# 17. food _||_ mnth | feed, ot_t
+data <- subset(wide_data, select = c(average_food, frequent_month, feed, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_food ~ frequent_month + feed + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = average_food ~ frequent_month + feed + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("food _||_ month | feed, outdoor temp", test[2])
+
+# 18. food _||_ mnth | feed, watr
+data <- subset(wide_data, select = c(average_food, frequent_month, feed, average_water))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_food ~ frequent_month + feed + average_water, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = average_food ~ frequent_month + feed + average_water, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("food _||_ month | feed, water", test[2])
+
+# 19. food _||_ ot_h | feed, ot_t
+data <- subset(wide_data, select = c(average_food, average_out_hum, feed, average_out_temp))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_out_hum, Z = data.frame(as.integer(data$feed), data$average_out_temp))
+add_test_result("food _||_ outdoor humidity | feed, outdoor temp", test$p.value)
+
+# 20. food _||_ ot_h | feed, watr
+data <- subset(wide_data, select = c(average_food, average_out_hum, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_out_hum, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("food _||_ outdoor humidity | feed, water", test$p.value)
+
+# 21. food _||_ ot_t | feed, watr
+data <- subset(wide_data, select = c(average_food, average_out_temp, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_out_temp, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("food _||_ outdoor temp | feed, water", test$p.value)
+
+# 22. food _||_ temp | ot_t, watr
+data <- subset(wide_data, select = c(average_food, average_Tmax, average_out_temp, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_Tmax, Z = data.frame(data$average_out_temp, data$average_water))
+add_test_result("food _||_ temperature | outdoor temp, water", test$p.value)
+
+# 23. food _||_ temp | feed, watr
+data <- subset(wide_data, select = c(average_food, average_Tmax, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_food, Y = data$average_Tmax, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("food _||_ temperature | feed, water", test$p.value)
+
+# 24. grwt _||_ hum | ot_t, temp
+data <- subset(wide_data, select = c(growth, average_Hmax, average_out_temp, average_Tmax, average_Tmin))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_Hmax, Z = data.frame(data$average_out_temp, data$average_Tmax, data$average_Tmin))
+add_test_result("growth _||_ humidity | outdoor temp, temperature", test$p.value)
+
+# 25. grwt _||_ hum | ot_t, watr
+data <- subset(wide_data, select = c(growth, average_Hmax, average_out_temp, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_Hmax, Z = data.frame(data$average_out_temp, data$average_water))
+add_test_result("growth _||_ humidity | outdoor temp, water", test$p.value)
+
+# 26. grwt _||_ hum | feed, watr
+data <- subset(wide_data, select = c(growth, average_Hmax, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_Hmax, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("growth _||_ humidity | feed, water", test$p.value)
+
+# 27. grwt _||_ mnth | feed, ot_t
+data <- subset(wide_data, select = c(growth, frequent_month, feed, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = growth ~ frequent_month + feed + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = growth ~ frequent_month + feed + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("growth _||_ month | feed, outdoor temp", test[2])
+
+# 28. grwt _||_ mnth | feed, watr
+data <- subset(wide_data, select = c(growth, frequent_month, feed, average_water))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = growth ~ frequent_month + feed + average_water, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula = growth ~ frequent_month + feed + average_water, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("growth _||_ month | feed, water", test[2])
+
+# 29. grwt _||_ ot_h | feed, ot_t
+data <- subset(wide_data, select = c(growth, average_out_hum, feed, average_out_temp))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_out_hum, Z = data.frame(as.integer(data$feed), data$average_out_temp))
+add_test_result("growth _||_ outdoor humidity | feed, outdoor temp", test$p.value)
+
+# 30. grwt _||_ ot_h | feed, watr
+data <- subset(wide_data, select = c(growth, average_out_hum, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_out_hum, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("growth _||_ outdoor humidity | feed, water", test$p.value)
+
+# 31. grwt _||_ ot_t | feed, watr
+data <- subset(wide_data, select = c(growth, average_out_temp, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_out_temp, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("growth _||_ outdoor temp | feed, water", test$p.value)
+
+# 32. grwt _||_ temp | ot_t, watr
+data <- subset(wide_data, select = c(growth, average_Tmax, average_out_temp, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_Tmax, Z = data.frame(data$average_out_temp, data$average_water))
+add_test_result("growth _||_ temperature | outdoor temp, water", test$p.value)
+
+# 33. grwt _||_ temp | feed, watr
+data <- subset(wide_data, select = c(growth, average_Tmax, feed, average_water))
+data <- na.omit(data)
+test <- gcm.test(X = data$growth, Y = data$average_Tmax, Z = data.frame(as.integer(data$feed), data$average_water))
+add_test_result("growth _||_ temperature | feed, water", test$p.value)
+
+# 34. hum _||_ mnth | ot_t
+data <- subset(wide_data, select = c(average_Hmax, frequent_month, average_out_temp))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_Hmax, Y = data$frequent_month, Z = data.frame(data$average_out_temp))
+add_test_result("humidity _||_ month | outdoor temp", test$p.value)
+
+# 35. hum _||_ ot_h | ot_t
+data <- subset(wide_data, select = c(average_Hmax, average_out_hum, average_out_temp))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_Hmax, Y = data$average_out_hum, Z = data.frame(data$average_out_temp))
+add_test_result("humidity _||_ outdoor humidity | outdoor temp", test$p.value)
+
+# 36. hum _||_ watr | ot_t, temp
+data <- subset(wide_data, select = c(average_Hmax, average_water, average_out_temp, average_Tmax, average_Tmin))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_Hmax, Y = data$average_water, Z = data.frame(data$average_out_temp, data$average_Tmax, data$average_Tmin))
+add_test_result("humidity _||_ water | outdoor temp, temp", test$p.value)
+
+# 37. mnth _||_ temp | ot_t
+data <- subset(wide_data, select = c(frequent_month, average_Tmax, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_Tmax ~ frequent_month + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula =  average_Tmax ~ frequent_month + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("month _||_ temperature | outdoor temp", test[2])
+
+# 38. mnth _||_ watr | ot_t
+data <- subset(wide_data, select = c(frequent_month, average_water, average_out_temp))
+data <- na.omit(data)
+null <- list()
+for (i in 1:1000){
+  null[[i]] <- NullGenerator(formula = average_water ~ frequent_month + average_out_temp, data = data, subsample = 0.4, p = 0.80)
+  cat(sprintf("Sample: %d\r", i))
+  flush.console()
+}
+NullDist <- do.call(rbind, null)
+test_stat <- TestGenerator(formula =  average_water ~ frequent_month + average_out_temp, data = data, p = 0.80)
+test <- get_pvalues(objective =  "reg:squarederror", NullDist = NullDist, test1_metric = test_stat[1], test2_metric = test_stat[2])
+add_test_result("month _||_ water | outdoor temp", test[2])
+
+# 39. ot_h _||_ temp | ot_t
+data <- subset(wide_data, select = c(average_out_hum, average_Tmax, average_out_temp))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_out_hum, Y = data$average_Tmax, Z = data.frame(data$average_out_temp))
+add_test_result("outdoor humidity _||_ temperature | outdoor temp", test$p.value)
+
+# 40. ot_h _||_ watr | ot_t
+data <- subset(wide_data, select = c(average_out_hum, average_water, average_out_temp))
+data <- na.omit(data)
+test <- gcm.test(X = data$average_out_hum, Y = data$average_water, Z = data.frame(data$average_out_temp))
+add_test_result("outdoor humidity _||_ water | outdoor temp", test$p.value)
+
+# Output the test results
+print(test_results)
+
+
+update_dag <- dagitty('dag {
+  out_hum [label="Outdoor humidity"]
+  out_tem [label="Outdoor temp"]
+  month [label="Month of year"]
+  geo [latent, label="Geography"]
+  feed [exposure, label="Feed type"]
+  food [label="Food cons"]
+  hum [label="Humidity"]
+  density [label="Bird density"]
+  water [label="Water cons"]
+  temp [label="Temp."]
+  co2 [latent, label="CO2-level"]
+  growth [label="Growth"]
+  ascites [outcome, label="Ascites"]
+  
+  growth -> ascites
+  out_hum -> ascites
+  out_tem -> ascites
+  out_tem -> co2
+  out_tem -> temp
+  out_tem -> hum
+  out_tem -> out_hum
+  out_tem -> water
+  temp -> ascites
+  temp -> hum
+  temp -> water
+  hum -> ascites
+  water -> food
+  water -> growth
+  month -> ascites
+  month -> out_hum
+  month -> out_tem
+  month -> feed
+  geo -> out_tem
+  geo -> out_hum
+  geo -> feed
+  feed -> growth
+  feed -> ascites
+  feed -> food
+  co2 -> ascites
+  density -> ascites
+  density -> growth
+  density -> food
+  water -> growth
+  food -> growth
+  month -> hum
+  out_hum -> growth
+  hum -> growth
+  hum -> water
+}')
+adjustmentSets(update_dag)
+adjustmentSets(update_dag, effect = "direct")
 

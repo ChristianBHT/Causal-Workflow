@@ -102,6 +102,5 @@ data$humidity_max[data$humidity_max > 100] <- NA
 data$humidity_min[data$humidity_min < 1] <- NA
 data$humidity_max[data$humidity_max < 1] <- NA
 
-
 save(data, file="data/clean_data.Rda")
 

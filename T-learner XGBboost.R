@@ -1,5 +1,4 @@
 library(xgboost)
-library(parallel)
 library(dplyr)
 library(stringr)
 
@@ -18,13 +17,13 @@ T_learner_boost <- function(data,
                             max_depth_c = 5,
                             verbose = 0,
                             early_stopping = 5,
-                            n_jobs = 1) { 
+                            n_jobs = 1) {
+
   if (is.null(index)) {
     data = data
   } else {
     data <- data[index, ]
   }
-  
   treatment <- data[treatment]
   
   data_t <- data[which(treatment == 1),]
